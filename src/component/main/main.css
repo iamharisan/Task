@@ -133,4 +133,8 @@
     text-align: "left";
     display: flex;
     gap: 10px;
+
+    .primary{
+      min-width: 33%;
+    }
 }

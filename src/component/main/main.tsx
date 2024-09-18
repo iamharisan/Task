@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Drawer, Button, Input } from "antd";
 import "./main.css";
 import { Select } from "antd";
+import { LeftOutlined } from '@ant-design/icons';
 import { showErrorMessage, showSuccessMessage } from "../../shared/message";
+import Spinner from "../../shared/spinner";
 function Main() {
   const defaultValue = { value: "", label: "" };
   const url = "https://webhook.site/37773d6f-f6eb-4afe-862f-7a37935f1498";
-
   const [segmentName, setSegmentName] = useState<string>("");
   const [modal, setModal] = useState<boolean>(false);
   const [schema, setSchema] = useState([{ ...defaultValue }]);
+  const [loading, setLoading] = useState<boolean>(false);
   const options = [
     { value: "first_name", label: "First Name" },
     { value: "last_name", label: "Last Name" },
@@ -19,6 +21,14 @@ function Main() {
     { value: "city", label: "City" },
     { value: "state", label: "State" },
   ];
+
+  useEffect(() => {
+    if (!modal) {
+      setSegmentName("");
+      setSchema([defaultValue]);
+    }
+  }, [modal]);
+
   function onSelectSchema(value: string, schema: any, i: number) {
     const tempData = [...schema];
     const selectedObj = options.find((obj) => obj.value === value);
@@ -57,6 +67,7 @@ function Main() {
     } else if (!schema.length || isAnyEmptySchema()) {
       showErrorMessage("Please select the schema");
     } else {
+      setLoading(true);
       tempSchema.forEach((obj) => tempArray.push({ [obj.value]: obj.label }));
       const data = {
         segment_name: segmentName,
@@ -70,13 +81,21 @@ function Main() {
         body: JSON.stringify(data),
       })
         .then((response) => {
+          setLoading(false);
           if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
           }
-          return response.json();
+          return response.text();
         })
-        .then((result) => console.log("Success:", result))
-        .catch((error) => console.error("Error:", error));
+        .then((result) => {
+          showSuccessMessage("Segment Added Successfully");
+          setModal(false);
+        })
+        .catch((error) => {
+          showErrorMessage('Failed to fetch')
+          setLoading(false);
+          console.error(error);
+        });
     }
   }
 
@@ -102,13 +121,14 @@ function Main() {
               style={{ marginLeft: 8 }}
               onClick={() => onSave()}
             >
-              Save the segment
+              {loading ? <Spinner size="small" /> : "Save the segment"}
             </Button>
             <Button className="_primary" onClick={() => setModal(false)}>
               Cancel
             </Button>
           </div>
         }
+        closeIcon={<LeftOutlined style={{ fontSize: '20px', color: 'white' }} />}
       >
         <div className="fields">
           <label htmlFor="segment">Enter the name of the Segment</label>
